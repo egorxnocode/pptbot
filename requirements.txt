@@ -1,7 +1,17 @@
-python-telegram-bot==20.7
-supabase==2.3.0
-python-dotenv==1.0.0
-APScheduler==3.10.4
-openai==1.6.1
-requests==2.31.0
+# Telegram Bot
+python-telegram-bot==21.0.1
 
+# Supabase Client
+supabase==2.9.1
+
+# Environment Variables
+python-dotenv==1.0.1
+
+# Scheduler
+APScheduler==3.10.4
+
+# OpenAI
+openai==1.54.5
+
+# HTTP Requests
+requests==2.32.3
