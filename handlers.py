@@ -147,20 +147,17 @@ async def send_video_and_button(update: Update, context: ContextTypes.DEFAULT_TY
         context: Контекст бота
         telegram_id: ID пользователя в Telegram
     """
-    # Проверяем наличие видеофайла
-    if not os.path.exists(VIDEO_LEARN1):
-        await update.message.reply_text(
-            f"❌ Ошибка: видеофайл не найден ({VIDEO_LEARN1})",
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    # Отправляем видео
-    with open(VIDEO_LEARN1, 'rb') as video_file:
-        await update.message.reply_video(
-            video=video_file,
-            supports_streaming=True
-        )
+    # Проверяем наличие видеофайла и отправляем если есть
+    if os.path.exists(VIDEO_LEARN1):
+        try:
+            with open(VIDEO_LEARN1, 'rb') as video_file:
+                await update.message.reply_video(
+                    video=video_file,
+                    supports_streaming=True
+                )
+        except Exception as e:
+            print(f"Ошибка при отправке видео: {e}")
+            # Продолжаем работу даже если не удалось отправить видео
     
     # Создаем inline кнопку
     keyboard = InlineKeyboardMarkup([
