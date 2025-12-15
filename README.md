@@ -887,12 +887,313 @@ REMINDER_3_DELAY = 24 * 60 * 60 # 24 часа
 
 ---
 
+## 🚀 Развертывание на сервере
+
+### Быстрое развертывание с GitHub
+
+```bash
+# 1. Клонировать репозиторий
+git clone https://github.com/egorxnocode/pptbot.git
+cd pptbot
+
+# 2. Создать .env из примера
+cp .env.example .env
+nano .env
+
+# 3. Заполнить переменные окружения:
+TELEGRAM_BOT_TOKEN=ваш_токен_от_BotFather
+SUPABASE_URL=https://ваш-проект.supabase.co
+SUPABASE_KEY=ваш_supabase_anon_key
+OPENAI_API_KEY=ваш_openai_api_key
+N8N_WEBHOOK_URL=http://ваш-сервер:5678/webhook/pptbot
+
+# 4. Загрузить медиафайлы
+# Поместите learn1.mp4 - learn7.mp4 в папку media/
+
+# 5. Запустить в Docker
+docker-compose up -d
+
+# 6. Проверить статус
+docker-compose ps
+docker-compose logs -f bot
+```
+
+### Пошаговая инструкция
+
+#### 1. Подготовка сервера
+
+```bash
+# Обновить систему
+sudo apt update && sudo apt upgrade -y
+
+# Установить Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Установить Docker Compose
+sudo apt install docker-compose -y
+
+# Добавить пользователя в группу docker
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Проверить установку
+docker --version
+docker-compose --version
+```
+
+#### 2. Клонирование и настройка
+
+```bash
+# Клонировать репозиторий
+cd /opt
+sudo git clone https://github.com/egorxnocode/pptbot.git
+cd pptbot
+sudo chown -R $USER:$USER .
+
+# Создать .env
+cp .env.example .env
+nano .env
+```
+
+#### 3. Настройка Supabase
+
+1. Откройте ваш Supabase проект
+2. Перейдите в Settings → API
+3. Скопируйте:
+   - `URL` → в `SUPABASE_URL`
+   - `anon/public` ключ → в `SUPABASE_KEY`
+
+4. Перейдите в SQL Editor
+5. Вставьте содержимое файла `setup.sql`
+6. Нажмите "Run"
+
+7. Добавьте тестовые email в таблицу `users`:
+```sql
+INSERT INTO users (email) VALUES ('test@mail.com');
+```
+
+8. Отредактируйте промпты в таблице `prompts` под свои нужды
+
+#### 4. Настройка n8n
+
+1. Откройте ваш n8n
+2. Создайте новый workflow
+3. Добавьте "Webhook" node
+4. Настройте:
+   - Method: POST
+   - Path: `/webhook/pptbot`
+5. Добавьте AI node (OpenAI, Anthropic и т.д.)
+6. Настройте обработку промптов
+7. Добавьте HTTP Request node для отправки ответа обратно боту
+8. Активируйте workflow
+9. Скопируйте Production Webhook URL → в `N8N_WEBHOOK_URL`
+
+#### 5. Загрузка медиафайлов
+
+```bash
+# Создать папку media если её нет
+mkdir -p media
+
+# Загрузить видео (пример с scp)
+scp learn*.mp4 user@your-server:/opt/pptbot/media/
+
+# Или через wget/curl если у вас есть ссылки
+# cd media
+# wget https://ваш-сервер/learn1.mp4
+# wget https://ваш-сервер/learn2.mp4
+# ... и так далее
+
+# Проверить
+ls -lh media/
+```
+
+#### 6. Запуск бота
+
+```bash
+# Запустить в Docker
+docker-compose up -d
+
+# Проверить статус
+docker-compose ps
+
+# Посмотреть логи
+docker-compose logs -f bot
+
+# Если всё работает, логи покажут:
+# "🚀 Бот успешно запущен"
+```
+
+#### 7. Проверка работы
+
+1. Откройте Telegram
+2. Найдите вашего бота
+3. Отправьте `/start`
+4. Введите email из базы данных
+5. Проверьте получение видео
+
+### Управление на сервере
+
+```bash
+# Просмотр логов
+docker-compose logs -f bot
+docker-compose logs --tail=100 bot
+
+# Использование скрипта логирования
+chmod +x logs.sh
+./logs.sh live
+./logs.sh errors
+./logs.sh user 123456789
+
+# Перезапуск бота
+docker-compose restart
+
+# Остановка бота
+docker-compose stop
+
+# Обновление бота
+cd /opt/pptbot
+git pull
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+
+# Проверка ресурсов
+docker stats pptbot-telegram-bot
+```
+
+### Автозапуск при перезагрузке сервера
+
+Docker Compose с `restart: unless-stopped` автоматически запускает бота после перезагрузки.
+
+Проверка:
+```bash
+sudo reboot
+# После перезагрузки
+docker ps | grep pptbot
+```
+
+### Подключение к сети с Supabase и n8n
+
+Если Supabase и n8n в той же Docker сети на сервере:
+
+```bash
+# Узнать имя сети
+docker network ls
+
+# Подключить бота (раскомментировать в docker-compose.yml)
+networks:
+  - your-network-name
+
+networks:
+  your-network-name:
+    external: true
+```
+
+В `.env` использовать имена контейнеров:
+```bash
+SUPABASE_URL=http://supabase-kong:8000
+N8N_WEBHOOK_URL=http://n8n:5678/webhook/pptbot
+```
+
+### Мониторинг
+
+```bash
+# Статус контейнера
+docker ps | grep pptbot
+
+# Использование ресурсов
+docker stats pptbot-telegram-bot
+
+# Проверка здоровья
+docker inspect --format='{{.State.Health.Status}}' pptbot-telegram-bot
+
+# Логи в реальном времени
+./logs.sh live
+
+# Только ошибки
+./logs.sh errors
+```
+
+### Troubleshooting на сервере
+
+**Бот не запускается:**
+```bash
+docker logs pptbot-telegram-bot
+docker exec pptbot-telegram-bot env | grep TELEGRAM
+```
+
+**Нет подключения к Supabase:**
+```bash
+docker exec pptbot-telegram-bot curl -I $SUPABASE_URL
+```
+
+**Нет подключения к n8n:**
+```bash
+docker exec pptbot-telegram-bot curl -I $N8N_WEBHOOK_URL
+```
+
+**Не видит медиафайлы:**
+```bash
+docker exec pptbot-telegram-bot ls -la /app/media
+ls -la media/
+```
+
+### Безопасность
+
+1. **Firewall:** Откройте только необходимые порты
+```bash
+sudo ufw allow 22/tcp    # SSH
+sudo ufw allow 443/tcp   # HTTPS (если нужен)
+sudo ufw enable
+```
+
+2. **Регулярные обновления:**
+```bash
+sudo apt update && sudo apt upgrade -y
+docker-compose pull
+```
+
+3. **Бэкапы:**
+```bash
+# Бэкап .env
+cp .env .env.backup
+
+# Бэкап медиафайлов
+tar -czf media_backup_$(date +%Y%m%d).tar.gz media/
+
+# Бэкап логов
+tar -czf logs_backup_$(date +%Y%m%d).tar.gz logs/
+```
+
+### Полезные команды
+
+```bash
+# Войти в контейнер
+docker exec -it pptbot-telegram-bot /bin/bash
+
+# Перезапуск без простоя
+docker-compose up -d --no-deps --build bot
+
+# Очистка старых образов
+docker system prune -a
+
+# Просмотр всех контейнеров
+docker ps -a
+
+# Удаление остановленных контейнеров
+docker container prune
+```
+
+---
+
 ## 📝 Лицензия
 
 Проект создан для внутреннего использования.
 
 ---
 
+**Репозиторий:** https://github.com/egorxnocode/pptbot  
 **Дата создания:** Декабрь 2025  
 **Версия:** 1.0
 
