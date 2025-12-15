@@ -21,7 +21,7 @@ from publish_handlers import (
     check_bot_admin_status, process_blue_answer, process_best_link,
     handle_skip_link, handle_button_to_dm, handle_button_to_website,
     process_website_link, handle_button_text_choice, process_custom_button_text,
-    handle_post_confirmation, start_publish_intro_post,
+    handle_post_confirmation,
     start_anons_flow, handle_write_anons_myself, handle_help_write_anons,
     process_anons_answer,
     start_sales_post_flow, handle_write_sales_myself, handle_help_write_sales,
