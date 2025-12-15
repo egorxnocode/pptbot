@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # TELEGRAM BOT
+  # ============================================
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pptbot-telegram-bot
+    restart: unless-stopped
+    environment:
+      # Telegram Bot
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      
+      # Supabase (ваш развернутый сервер)
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
+      
+      # OpenAI
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      
+      # n8n (ваш развернутый сервер)
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
+    volumes:
+      # Медиафайлы (видео)
+      - ./media:/app/media
+      # Логи бота
+      - ./logs:/app/logs
+      # Временные файлы (голосовые)
+      - ./temp:/app/temp
+    # Если Supabase и n8n в той же сети Docker, раскомментируйте:
+    # networks:
+    #   - external-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Если нужно подключиться к внешней сети Docker (где Supabase и n8n)
+# networks:
+#   external-network:
+#     external: true
+#     name: your-network-name
