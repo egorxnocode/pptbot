@@ -1051,7 +1051,10 @@ docker-compose restart
 # Остановка бота
 docker-compose stop
 
-# Обновление бота
+# Обновление бота (быстрый способ)
+./update-bot.sh
+
+# Обновление бота (вручную)
 cd /opt/pptbot
 git pull
 docker-compose down
