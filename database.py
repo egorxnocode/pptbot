@@ -9,6 +9,7 @@ from config import (
 )
 from typing import Optional, Dict, Any
 from datetime import datetime
+from logger import bot_logger
 
 
 class Database:

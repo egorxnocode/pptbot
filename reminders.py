@@ -8,6 +8,7 @@ from telegram.constants import ParseMode
 from config import REMINDER_1_DELAY, REMINDER_2_DELAY, REMINDER_3_DELAY, UserState
 from database import Database
 import messages
+from logger import bot_logger
 
 
 # Инициализация базы данных
