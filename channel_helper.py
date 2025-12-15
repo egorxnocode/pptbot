@@ -5,6 +5,7 @@
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import TelegramError
 from telegram.constants import ParseMode
+from logger import bot_logger
 
 
 async def check_if_channel(bot: Bot, channel_link: str) -> tuple[bool, str, int]:
@@ -41,7 +42,7 @@ async def check_if_channel(bot: Bot, channel_link: str) -> tuple[bool, str, int]
             return False, username, 0
             
     except TelegramError as e:
-        print(f"Ошибка при проверке канала: {e}")
+        bot_logger.error('PUBLISH', f'Ошибка проверки канала: {str(e)}', channel=channel_link)
         return False, "", 0
 
 
@@ -71,7 +72,7 @@ async def check_bot_admin(bot: Bot, channel_id: int, bot_id: int) -> bool:
         return False
         
     except TelegramError as e:
-        print(f"Ошибка при проверке прав бота: {e}")
+        bot_logger.error('PUBLISH', f'Ошибка проверки прав бота: {str(e)}', channel_id=channel_id)
         return False
 
 
@@ -119,6 +120,6 @@ async def publish_post_to_channel(
         return True, message.message_id
         
     except TelegramError as e:
-        print(f"Ошибка при публикации поста: {e}")
+        bot_logger.error('PUBLISH', f'Ошибка публикации поста: {str(e)}', channel_id=channel_id)
         return False, 0
 

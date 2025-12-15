@@ -7,6 +7,7 @@ import uuid
 import time
 from typing import Optional, Dict, Any
 from config import N8N_WEBHOOK_URL
+from logger import bot_logger
 
 
 def generate_request_id() -> str:
@@ -45,14 +46,17 @@ def send_to_n8n(telegram_id: int, prompt_text: str, request_id: str) -> bool:
         )
         
         if response.status_code == 200:
-            print(f"Запрос отправлен в n8n. Request ID: {request_id}")
+            bot_logger.n8n_request_sent(telegram_id, request_id, prompt_text[:50])
             return True
         else:
-            print(f"Ошибка при отправке в n8n: {response.status_code}")
+            bot_logger.error('N8N', f'HTTP {response.status_code}', telegram_id=telegram_id, 
+                           request_id=request_id, url=N8N_WEBHOOK_URL)
             return False
             
     except Exception as e:
-        print(f"Ошибка при отправке в n8n: {e}")
+        bot_logger.n8n_error(telegram_id, str(e))
+        bot_logger.error('N8N', f'Ошибка подключения: {str(e)}', telegram_id=telegram_id, 
+                        url=N8N_WEBHOOK_URL)
         return False
 
 
@@ -81,12 +85,12 @@ def wait_for_n8n_response(
         response = db.get_n8n_response(telegram_id, request_id)
         
         if response:
-            print(f"Получен ответ от n8n для request_id: {request_id}")
+            bot_logger.n8n_response_received(telegram_id, request_id, len(response))
             return response
         
         # Ждем 5 секунд перед следующей проверкой
         time.sleep(5)
     
-    print(f"Таймаут ожидания ответа от n8n. Request ID: {request_id}")
+    bot_logger.n8n_timeout(telegram_id, request_id, timeout)
     return None
 

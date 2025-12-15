@@ -41,7 +41,7 @@ class Database:
             
             return len(response.data) > 0
         except Exception as e:
-            print(f"Ошибка при проверке email: {e}")
+            bot_logger.db_error(str(e), 'users')
             return False
     
     def get_user_by_telegram_id(self, telegram_id: int) -> Optional[Dict[str, Any]]:
@@ -64,7 +64,7 @@ class Database:
                 return response.data[0]
             return None
         except Exception as e:
-            print(f"Ошибка при получении пользователя: {e}")
+            bot_logger.db_error(str(e), 'users', telegram_id=telegram_id)
             return None
     
     def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
@@ -88,7 +88,7 @@ class Database:
                 return response.data[0]
             return None
         except Exception as e:
-            print(f"Ошибка при получении пользователя по email: {e}")
+            bot_logger.db_error(str(e), 'users')
             return None
     
     def update_user_telegram_id(self, email: str, telegram_id: int) -> bool:
@@ -110,7 +110,7 @@ class Database:
                 .execute()
             return True
         except Exception as e:
-            print(f"Ошибка при обновлении telegram_id: {e}")
+            bot_logger.db_error(str(e), "users")
             return False
     
     def update_user_state(self, telegram_id: int, state: str) -> bool:
@@ -134,7 +134,7 @@ class Database:
                 .execute()
             return True
         except Exception as e:
-            print(f"Ошибка при обновлении состояния: {e}")
+            bot_logger.db_error(str(e), "users")
             return False
     
     def update_video_sent_time(self, telegram_id: int) -> bool:
@@ -157,7 +157,7 @@ class Database:
                 .execute()
             return True
         except Exception as e:
-            print(f"Ошибка при сохранении времени отправки видео: {e}")
+            bot_logger.db_error(str(e), "users")
             return False
     
     def get_user_state(self, telegram_id: int) -> Optional[str]:
@@ -195,7 +195,7 @@ class Database:
                 return response.data[0].get('prompt_text')
             return None
         except Exception as e:
-            print(f"Ошибка при получении промпта: {e}")
+            bot_logger.db_error(str(e), "prompts")
             return None
     
     def save_n8n_request(self, telegram_id: int, request_id: str, user_answer: str) -> bool:
@@ -223,7 +223,7 @@ class Database:
                 .execute()
             return True
         except Exception as e:
-            print(f"Ошибка при сохранении запроса n8n: {e}")
+            bot_logger.db_error(str(e), "n8n_responses")
             return False
     
     def save_n8n_response(self, request_id: str, n8n_response: str) -> bool:
@@ -249,7 +249,7 @@ class Database:
                 .execute()
             return True
         except Exception as e:
-            print(f"Ошибка при сохранении ответа n8n: {e}")
+            bot_logger.db_error(str(e), "n8n_responses")
             return False
     
     def get_n8n_response(self, telegram_id: int, request_id: str) -> Optional[str]:
@@ -276,7 +276,7 @@ class Database:
                     return data.get('n8n_response')
             return None
         except Exception as e:
-            print(f"Ошибка при получении ответа n8n: {e}")
+            bot_logger.db_error(str(e), "n8n_responses")
             return None
     
     def get_post_data(self, post_number: int) -> Optional[Dict[str, Any]]:
@@ -299,7 +299,7 @@ class Database:
                 return response.data[0]
             return None
         except Exception as e:
-            print(f"Ошибка при получении данных поста: {e}")
+            bot_logger.db_error(str(e), "posts")
             return None
     
     def update_user_post_progress(
@@ -341,7 +341,7 @@ class Database:
                 .execute()
             return True
         except Exception as e:
-            print(f"Ошибка при обновлении прогресса постов: {e}")
+            bot_logger.db_error(str(e), "users")
             return False
     
     def get_user_post_progress(self, telegram_id: int) -> Optional[Dict[str, Any]]:
@@ -371,7 +371,7 @@ class Database:
                 return data
             return None
         except Exception as e:
-            print(f"Ошибка при получении прогресса постов: {e}")
+            bot_logger.db_error(str(e), "users")
             return None
     
     def save_channel_data(self, telegram_id: int, channel_username: str, channel_id: int) -> bool:
@@ -397,7 +397,7 @@ class Database:
                 .execute()
             return True
         except Exception as e:
-            print(f"Ошибка при сохранении данных канала: {e}")
+            bot_logger.db_error(str(e), "users")
             return False
     
     def save_blue_button_data(
@@ -448,7 +448,7 @@ class Database:
                 .execute()
             return True
         except Exception as e:
-            print(f"Ошибка при сохранении данных кнопки: {e}")
+            bot_logger.db_error(str(e), "users")
             return False
     
     def get_blue_button_data(self, telegram_id: int) -> Optional[Dict[str, Any]]:
@@ -484,7 +484,7 @@ class Database:
                 return data
             return None
         except Exception as e:
-            print(f"Ошибка при получении данных кнопки: {e}")
+            bot_logger.db_error(str(e), "users")
             return None
     
     def save_anons_data(
@@ -522,7 +522,7 @@ class Database:
                 .execute()
             return True
         except Exception as e:
-            print(f"Ошибка при сохранении данных анонса: {e}")
+            bot_logger.db_error(str(e), "users")
             return False
     
     def get_anons_data(self, telegram_id: int) -> Optional[Dict[str, Any]]:
@@ -545,7 +545,7 @@ class Database:
                 return response.data[0]
             return None
         except Exception as e:
-            print(f"Ошибка при получении данных анонса: {e}")
+            bot_logger.db_error(str(e), "users")
             return None
     
     def save_sales_data(
@@ -591,7 +591,7 @@ class Database:
                 .execute()
             return True
         except Exception as e:
-            print(f"Ошибка при сохранении данных продающего поста: {e}")
+            bot_logger.db_error(str(e), "users")
             return False
     
     def get_sales_data(self, telegram_id: int) -> Optional[Dict[str, Any]]:
@@ -614,6 +614,6 @@ class Database:
                 return response.data[0]
             return None
         except Exception as e:
-            print(f"Ошибка при получении данных продающего поста: {e}")
+            bot_logger.db_error(str(e), "users")
             return None
 

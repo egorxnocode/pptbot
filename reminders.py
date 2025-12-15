@@ -46,7 +46,8 @@ async def send_reminder(context: ContextTypes.DEFAULT_TYPE, telegram_id: int, re
                 parse_mode=ParseMode.HTML
             )
         except Exception as e:
-            print(f"Ошибка при отправке напоминания пользователю {telegram_id}: {e}")
+            bot_logger.error('REMINDER', f'Ошибка при отправке напоминания #{reminder_number}', 
+                           telegram_id=telegram_id, error=str(e))
 
 
 async def send_reminder_1(context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -113,7 +114,9 @@ async def schedule_reminders(context: ContextTypes.DEFAULT_TYPE, telegram_id: in
         name=f"reminder_3_{telegram_id}"
     )
     
-    print(f"Запланированы напоминания для пользователя {telegram_id}")
+    bot_logger.reminder_scheduled(telegram_id, REMINDER_1_DELAY // 60)
+    bot_logger.info('REMINDER', f'Запланировано 3 напоминания: {REMINDER_1_DELAY//60}м, {REMINDER_2_DELAY//60}м, {REMINDER_3_DELAY//3600}ч',
+                   telegram_id=telegram_id)
 
 
 def cancel_reminders(context: ContextTypes.DEFAULT_TYPE, telegram_id: int) -> None:
@@ -139,5 +142,5 @@ def cancel_reminders(context: ContextTypes.DEFAULT_TYPE, telegram_id: int) -> No
         for job in current_jobs:
             job.schedule_removal()
     
-    print(f"Отменены напоминания для пользователя {telegram_id}")
+    bot_logger.info('REMINDER', f'Отменены все напоминания', telegram_id=telegram_id)
 

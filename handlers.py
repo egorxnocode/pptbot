@@ -156,7 +156,8 @@ async def send_video_and_button(update: Update, context: ContextTypes.DEFAULT_TY
                     supports_streaming=True
                 )
         except Exception as e:
-            print(f"Ошибка при отправке видео: {e}")
+            bot_logger.error('VIDEO', f'Ошибка при отправке видео learn1.mp4: {str(e)}', 
+                           telegram_id=telegram_id)
             # Продолжаем работу даже если не удалось отправить видео
     
     # Создаем inline кнопку

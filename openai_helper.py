@@ -5,6 +5,7 @@
 import os
 from openai import OpenAI
 from config import OPENAI_API_KEY
+from logger import bot_logger
 
 
 # Инициализация клиента OpenAI
@@ -32,6 +33,6 @@ def transcribe_voice(audio_file_path: str) -> str:
         return transcript.text
     
     except Exception as e:
-        print(f"Ошибка при транскрибации голосового сообщения: {e}")
+        bot_logger.error('VOICE', f'Ошибка транскрибации: {str(e)}', file=audio_file_path)
         return None
 
