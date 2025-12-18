@@ -48,9 +48,18 @@ def send_to_n8n(telegram_id: int, text: str, request_id: str, webhook_type: str)
         'prodaj': N8N_WEBHOOK_PRODAJ
     }
     
+    # Проверяем, что тип webhook валидный
+    if webhook_type not in webhook_urls:
+        bot_logger.error('N8N', f'Неизвестный тип webhook: {webhook_type}', telegram_id=telegram_id)
+        return False
+    
+    # Получаем URL
     webhook_url = webhook_urls.get(webhook_type)
     if not webhook_url:
-        bot_logger.error('N8N', f'Неизвестный тип webhook: {webhook_type}', telegram_id=telegram_id)
+        bot_logger.error('N8N', 
+                        f'Переменная окружения для webhook "{webhook_type}" не установлена. '
+                        f'Проверьте N8N_WEBHOOK_{webhook_type.upper()} в .env файле', 
+                        telegram_id=telegram_id)
         return False
     
     try:

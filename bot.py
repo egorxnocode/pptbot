@@ -4,9 +4,47 @@
 import os
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 
-from config import TELEGRAM_BOT_TOKEN, MEDIA_FOLDER, TEMP_FOLDER
+from config import (
+    TELEGRAM_BOT_TOKEN, MEDIA_FOLDER, TEMP_FOLDER,
+    SUPABASE_URL, SUPABASE_KEY, OPENAI_API_KEY,
+    N8N_WEBHOOK_OSEBE, N8N_WEBHOOK_POST, N8N_WEBHOOK_BLUEBUTT,
+    N8N_WEBHOOK_ANONS, N8N_WEBHOOK_PRODAJ
+)
 from handlers import start_command, button_callback, handle_text_message, handle_voice_message
 from logger import bot_logger
+
+
+def check_environment():
+    """Проверяет наличие всех необходимых переменных окружения"""
+    missing_vars = []
+    
+    # Обязательные переменные
+    required_vars = {
+        'TELEGRAM_BOT_TOKEN': TELEGRAM_BOT_TOKEN,
+        'SUPABASE_URL': SUPABASE_URL,
+        'SUPABASE_KEY': SUPABASE_KEY,
+        'OPENAI_API_KEY': OPENAI_API_KEY,
+        'N8N_WEBHOOK_OSEBE': N8N_WEBHOOK_OSEBE,
+        'N8N_WEBHOOK_POST': N8N_WEBHOOK_POST,
+        'N8N_WEBHOOK_BLUEBUTT': N8N_WEBHOOK_BLUEBUTT,
+        'N8N_WEBHOOK_ANONS': N8N_WEBHOOK_ANONS,
+        'N8N_WEBHOOK_PRODAJ': N8N_WEBHOOK_PRODAJ
+    }
+    
+    for var_name, var_value in required_vars.items():
+        if not var_value:
+            missing_vars.append(var_name)
+    
+    if missing_vars:
+        print("❌ Ошибка: Не установлены следующие переменные окружения:")
+        for var in missing_vars:
+            print(f"   - {var}")
+        print("\n📝 Создайте файл .env и добавьте все необходимые переменные")
+        print("   Пример можно посмотреть в .env.example")
+        return False
+    
+    print("✅ Все переменные окружения настроены")
+    return True
 
 
 def create_folders():
@@ -30,10 +68,8 @@ def create_folders():
 
 def main():
     """Запуск бота"""
-    # Проверяем наличие токена
-    if not TELEGRAM_BOT_TOKEN:
-        print("❌ Ошибка: TELEGRAM_BOT_TOKEN не установлен!")
-        print("Создайте файл .env и добавьте ваш токен бота")
+    # Проверяем все переменные окружения
+    if not check_environment():
         return
     
     # Создаем необходимые папки
