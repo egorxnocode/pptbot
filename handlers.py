@@ -770,12 +770,16 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     elif user_state == UserState.ANSWERING_SALES_QUESTIONS:
         # Обрабатываем ответ на вопрос для продающего поста
         answer = update.message.text.strip()
-        # Определяем номер вопроса
+        # Определяем номер вопроса (пустая строка = не заполнено)
         sales_data = db.get_sales_data(telegram_id)
         if sales_data:
-            if sales_data.get('prodaj1') and sales_data.get('prodaj2'):
+            prodaj1 = sales_data.get('prodaj1', '')
+            prodaj2 = sales_data.get('prodaj2', '')
+            # Если оба ответа есть и не пустые - это вопрос 3
+            if prodaj1 and prodaj2:
                 question_num = 3
-            elif sales_data.get('prodaj1'):
+            # Если первый ответ есть и не пустой - это вопрос 2
+            elif prodaj1:
                 question_num = 2
             else:
                 question_num = 1

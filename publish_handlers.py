@@ -1020,9 +1020,12 @@ async def handle_rewrite_sales(query, context: ContextTypes.DEFAULT_TYPE, telegr
     # Увеличиваем счетчик переписываний
     sales_data = db.get_sales_data(telegram_id)
     rewrite_count = sales_data.get('rewrite_count', 0) if sales_data else 0
-    db.save_sales_data(telegram_id, rewrite_count=rewrite_count + 1)
     
-    db.update_user_state(telegram_id, UserState.REWRITING_SALES_POST)
+    # Очищаем старые ответы для повторного ввода (используем пустые строки вместо None)
+    db.save_sales_data(telegram_id, prodaj1='', prodaj2='', prodaj3='', rewrite_count=rewrite_count + 1)
+    
+    # Устанавливаем состояние ответа на вопросы (не REWRITING, а ANSWERING)
+    db.update_user_state(telegram_id, UserState.ANSWERING_SALES_QUESTIONS)
     
     await query.edit_message_text(
         "🔄 Отлично! Давайте переработаем пост. Ответьте на вопросы еще раз.",
