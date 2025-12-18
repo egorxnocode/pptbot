@@ -51,27 +51,31 @@ async def handle_n8n_response(request, webhook_type: str):
                        f'Получен запрос от n8n ({webhook_type})', 
                        webhook_type=webhook_type)
         
-        # Читаем JSON
-        try:
-            data = await request.json()
-        except Exception as e:
-            bot_logger.error('WEBHOOK', 
-                           f'Ошибка парсинга JSON от n8n ({webhook_type}): {str(e)}')
-            return web.json_response({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+        # Читаем данные из headers (n8n отправляет через headers)
+        headers = request.headers
         
-        telegram_id = data.get('telegram_id')
-        request_id = data.get('request_id')
-        response_text = data.get('response')
+        # Получаем данные из headers
+        telegram_id = headers.get('telegram-id') or headers.get('telegram_id')
+        request_id = headers.get('request-id') or headers.get('request_id')
+        response_text = headers.get('response')
+        
+        # Преобразуем telegram_id в int если это строка
+        if telegram_id:
+            try:
+                telegram_id = int(telegram_id)
+            except (ValueError, TypeError):
+                bot_logger.error('WEBHOOK', f'Неверный формат telegram_id: {telegram_id}')
+                return web.json_response({'status': 'error', 'message': 'Invalid telegram_id format'}, status=400)
         
         bot_logger.info('WEBHOOK', 
-                       f'Данные от n8n: telegram_id={telegram_id}, request_id={request_id}, response_len={len(response_text) if response_text else 0}',
+                       f'Данные из headers: telegram_id={telegram_id}, request_id={request_id}, response_len={len(response_text) if response_text else 0}',
                        telegram_id=telegram_id,
                        request_id=request_id)
         
         if not all([telegram_id, request_id, response_text]):
             bot_logger.error('WEBHOOK', 
-                           f'Неполные данные от n8n ({webhook_type}): {data}')
-            return web.json_response({'status': 'error', 'message': 'Missing required fields', 'received': data}, status=400)
+                           f'Неполные данные от n8n ({webhook_type}). Headers: {dict(headers)}')
+            return web.json_response({'status': 'error', 'message': 'Missing required headers: telegram-id, request-id, response'}, status=400)
         
         bot_logger.n8n_response_received(telegram_id, request_id, len(response_text))
         bot_logger.info('WEBHOOK', 
