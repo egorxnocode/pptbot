@@ -2,16 +2,18 @@
 Главный файл телеграм бота
 """
 import os
+import asyncio
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 
 from config import (
-    TELEGRAM_BOT_TOKEN, MEDIA_FOLDER, TEMP_FOLDER,
+    TELEGRAM_BOT_TOKEN, MEDIA_FOLDER, TEMP_FOLDER, WEBHOOK_PORT,
     SUPABASE_URL, SUPABASE_KEY, OPENAI_API_KEY,
     N8N_WEBHOOK_OSEBE, N8N_WEBHOOK_POST, N8N_WEBHOOK_BLUEBUTT,
     N8N_WEBHOOK_ANONS, N8N_WEBHOOK_PRODAJ
 )
 from handlers import start_command, button_callback, handle_text_message, handle_voice_message
 from logger import bot_logger
+from webhook_server import start_webhook_server
 
 
 def check_environment():
@@ -66,15 +68,8 @@ def create_folders():
         bot_logger.info('SYSTEM', f'Создана папка {TEMP_FOLDER}')
 
 
-def main():
-    """Запуск бота"""
-    # Проверяем все переменные окружения
-    if not check_environment():
-        return
-    
-    # Создаем необходимые папки
-    create_folders()
-    
+async def run_bot():
+    """Запускает telegram бота"""
     # Создаем приложение
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     
@@ -96,12 +91,53 @@ def main():
         handle_text_message
     ))
     
-    # Запускаем бота
-    print("🤖 Бот запущен и готов к работе!")
-    print("Нажмите Ctrl+C для остановки бота")
+    # Инициализируем и запускаем бота
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling(allowed_updates=["message", "callback_query"])
     
-    # Запускаем polling
-    application.run_polling(allowed_updates=["message", "callback_query"])
+    bot_logger.info('SYSTEM', '🤖 Telegram бот запущен')
+    print("🤖 Telegram бот запущен и готов к работе!")
+    
+    # Ждем до остановки
+    try:
+        await asyncio.Event().wait()
+    finally:
+        await application.updater.stop()
+        await application.stop()
+        await application.shutdown()
+
+
+async def main_async():
+    """Асинхронный запуск бота и веб-сервера"""
+    # Проверяем все переменные окружения
+    if not check_environment():
+        return
+    
+    # Создаем необходимые папки
+    create_folders()
+    
+    # Запускаем веб-сервер для приема ответов от n8n
+    webhook_runner = await start_webhook_server(WEBHOOK_PORT)
+    
+    print("Нажмите Ctrl+C для остановки")
+    print("")
+    
+    # Запускаем бота
+    try:
+        await run_bot()
+    finally:
+        # Останавливаем веб-сервер при завершении
+        await webhook_runner.cleanup()
+
+
+def main():
+    """Запуск бота"""
+    try:
+        asyncio.run(main_async())
+    except KeyboardInterrupt:
+        bot_logger.info('SYSTEM', '⏹️ Бот остановлен пользователем')
+        print("\n⏹️ Бот остановлен")
 
 
 if __name__ == '__main__':

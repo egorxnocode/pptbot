@@ -546,10 +546,8 @@ async def process_help_answer(update: Update, context: ContextTypes.DEFAULT_TYPE
         db.update_user_state(telegram_id, UserState.WAITING_HELP)
         return
     
-    # Ждем ответ от n8n (в отдельной корутине, чтобы не блокировать)
-    n8n_response = await asyncio.to_thread(
-        wait_for_n8n_response,
-        db,
+    # Ждем ответ от n8n через webhook
+    n8n_response = await wait_for_n8n_response(
         telegram_id,
         request_id,
         180  # 3 минуты
@@ -974,10 +972,8 @@ async def generate_post_with_n8n(update: Update, context: ContextTypes.DEFAULT_T
         await ask_post_question(context, telegram_id, post_num, 1)
         return
     
-    # Ждем ответ от n8n
-    n8n_response = await asyncio.to_thread(
-        wait_for_n8n_response,
-        db,
+    # Ждем ответ от n8n через webhook
+    n8n_response = await wait_for_n8n_response(
         telegram_id,
         request_id,
         180  # 3 минуты

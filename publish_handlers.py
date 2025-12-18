@@ -308,10 +308,8 @@ async def generate_blue_button_post(update_or_query, context: ContextTypes.DEFAU
         await ask_blue_question(context, telegram_id, 1)
         return
     
-    # Ждем ответ от n8n
-    n8n_response = await asyncio.to_thread(
-        wait_for_n8n_response,
-        db,
+    # Ждем ответ от n8n через webhook
+    n8n_response = await wait_for_n8n_response(
         telegram_id,
         request_id,
         180
@@ -768,10 +766,8 @@ async def generate_anons_with_n8n(update: Update, context: ContextTypes.DEFAULT_
         await ask_anons_question(context, telegram_id, 1)
         return
     
-    # Ждем ответ от n8n
-    n8n_response = await asyncio.to_thread(
-        wait_for_n8n_response,
-        db,
+    # Ждем ответ от n8n через webhook
+    n8n_response = await wait_for_n8n_response(
         telegram_id,
         request_id,
         180
@@ -975,10 +971,8 @@ async def generate_sales_post_with_n8n(update: Update, context: ContextTypes.DEF
         await ask_sales_question(context, telegram_id, 1)
         return
     
-    # Ждем ответ от n8n
-    n8n_response = await asyncio.to_thread(
-        wait_for_n8n_response,
-        db,
+    # Ждем ответ от n8n через webhook
+    n8n_response = await wait_for_n8n_response(
         telegram_id,
         request_id,
         180

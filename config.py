@@ -42,6 +42,9 @@ VIDEO_LEARN7 = os.path.join(MEDIA_FOLDER, 'learn7.mp4')
 # Папка для временных файлов (голосовые сообщения)
 TEMP_FOLDER = 'temp'
 
+# Порт для webhook сервера (прием ответов от n8n)
+WEBHOOK_PORT = int(os.getenv('WEBHOOK_PORT', '8080'))
+
 # Состояния пользователя
 class UserState:
     """Состояния пользователя в боте"""

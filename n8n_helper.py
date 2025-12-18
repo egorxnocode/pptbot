@@ -1,11 +1,10 @@
 """
 Модуль для работы с n8n webhook
-Отправка запросов и получение ответов
+Отправка запросов и получение ответов через прямые webhooks
 """
 import requests
 import uuid
-import time
-from typing import Optional, Dict, Any
+from typing import Optional
 from config import (
     N8N_WEBHOOK_OSEBE,
     N8N_WEBHOOK_POST,
@@ -14,6 +13,7 @@ from config import (
     N8N_WEBHOOK_PRODAJ
 )
 from logger import bot_logger
+import webhook_server
 
 
 def generate_request_id() -> str:
@@ -92,17 +92,15 @@ def send_to_n8n(telegram_id: int, text: str, request_id: str, webhook_type: str)
         return False
 
 
-def wait_for_n8n_response(
-    db,
+async def wait_for_n8n_response(
     telegram_id: int,
     request_id: str,
     timeout: int = 180
 ) -> Optional[str]:
     """
-    Ожидает ответ от n8n (проверяет БД каждые 5 секунд)
+    Ожидает ответ от n8n через webhook
     
     Args:
-        db: Объект базы данных
         telegram_id: ID пользователя в Telegram
         request_id: ID запроса
         timeout: Время ожидания в секундах (по умолчанию 180 = 3 минуты)
@@ -110,19 +108,10 @@ def wait_for_n8n_response(
     Returns:
         Ответ от n8n или None если ответ не получен
     """
-    start_time = time.time()
+    response = await webhook_server.wait_for_response(request_id, timeout)
     
-    while time.time() - start_time < timeout:
-        # Проверяем наличие ответа в БД
-        response = db.get_n8n_response(telegram_id, request_id)
-        
-        if response:
-            bot_logger.n8n_response_received(telegram_id, request_id, len(response))
-            return response
-        
-        # Ждем 5 секунд перед следующей проверкой
-        time.sleep(5)
+    if not response:
+        bot_logger.n8n_timeout(telegram_id, request_id, timeout)
     
-    bot_logger.n8n_timeout(telegram_id, request_id, timeout)
-    return None
+    return response
 

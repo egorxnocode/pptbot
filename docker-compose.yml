@@ -29,6 +29,9 @@ services:
       N8N_WEBHOOK_BLUEBUTT: ${N8N_WEBHOOK_BLUEBUTT}
       N8N_WEBHOOK_ANONS: ${N8N_WEBHOOK_ANONS}
       N8N_WEBHOOK_PRODAJ: ${N8N_WEBHOOK_PRODAJ}
+    ports:
+      # Webhook сервер для приема ответов от n8n
+      - "${WEBHOOK_PORT:-8080}:8080"
     volumes:
       # Медиафайлы (видео)
       - ./media:/app/media
