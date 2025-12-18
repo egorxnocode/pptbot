@@ -6,7 +6,13 @@ import requests
 import uuid
 import time
 from typing import Optional, Dict, Any
-from config import N8N_WEBHOOK_URL
+from config import (
+    N8N_WEBHOOK_OSEBE,
+    N8N_WEBHOOK_POST,
+    N8N_WEBHOOK_BLUEBUTT,
+    N8N_WEBHOOK_ANONS,
+    N8N_WEBHOOK_PRODAJ
+)
 from logger import bot_logger
 
 
@@ -20,43 +26,60 @@ def generate_request_id() -> str:
     return str(uuid.uuid4())
 
 
-def send_to_n8n(telegram_id: int, prompt_text: str, request_id: str) -> bool:
+def send_to_n8n(telegram_id: int, text: str, request_id: str, webhook_type: str) -> bool:
     """
     Отправляет данные в n8n через webhook
     
     Args:
         telegram_id: ID пользователя в Telegram
-        prompt_text: Текст промпта для отправки
+        text: Текст для отправки (промпт или ответ пользователя)
         request_id: Уникальный ID запроса
+        webhook_type: Тип webhook ('osebe', 'post', 'bluebutt', 'anons', 'prodaj')
         
     Returns:
         True если запрос отправлен успешно, False если нет
     """
+    # Определяем URL webhook в зависимости от типа
+    webhook_urls = {
+        'osebe': N8N_WEBHOOK_OSEBE,
+        'post': N8N_WEBHOOK_POST,
+        'bluebutt': N8N_WEBHOOK_BLUEBUTT,
+        'anons': N8N_WEBHOOK_ANONS,
+        'prodaj': N8N_WEBHOOK_PRODAJ
+    }
+    
+    webhook_url = webhook_urls.get(webhook_type)
+    if not webhook_url:
+        bot_logger.error('N8N', f'Неизвестный тип webhook: {webhook_type}', telegram_id=telegram_id)
+        return False
+    
     try:
         payload = {
             "telegram_id": telegram_id,
-            "request_id": request_id,
-            "prompt": prompt_text
+            "text": text,
+            "request_id": request_id
         }
         
         response = requests.post(
-            N8N_WEBHOOK_URL,
+            webhook_url,
             json=payload,
             timeout=10
         )
         
         if response.status_code == 200:
-            bot_logger.n8n_request_sent(telegram_id, request_id, prompt_text[:50])
+            bot_logger.n8n_request_sent(telegram_id, request_id, text[:50])
+            bot_logger.info('N8N', f'Запрос отправлен на {webhook_type}', telegram_id=telegram_id, 
+                          request_id=request_id, webhook_type=webhook_type)
             return True
         else:
             bot_logger.error('N8N', f'HTTP {response.status_code}', telegram_id=telegram_id, 
-                           request_id=request_id, url=N8N_WEBHOOK_URL)
+                           request_id=request_id, url=webhook_url, webhook_type=webhook_type)
             return False
             
     except Exception as e:
         bot_logger.n8n_error(telegram_id, str(e))
         bot_logger.error('N8N', f'Ошибка подключения: {str(e)}', telegram_id=telegram_id, 
-                        url=N8N_WEBHOOK_URL)
+                        url=webhook_url, webhook_type=webhook_type)
         return False
 
 

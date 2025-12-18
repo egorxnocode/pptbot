@@ -20,8 +20,12 @@ SUPABASE_POSTS_TABLE = os.getenv('SUPABASE_POSTS_TABLE', 'posts')
 # OpenAI настройки
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
-# n8n настройки
-N8N_WEBHOOK_URL = os.getenv('N8N_WEBHOOK_URL')
+# n8n настройки - отдельный webhook для каждого типа запроса
+N8N_WEBHOOK_OSEBE = os.getenv('N8N_WEBHOOK_OSEBE')  # Для prompt_osebe (рассказ о себе)
+N8N_WEBHOOK_POST = os.getenv('N8N_WEBHOOK_POST')  # Для prompt_post (создание постов)
+N8N_WEBHOOK_BLUEBUTT = os.getenv('N8N_WEBHOOK_BLUEBUTT')  # Для prompt_bluebutt (пост-знакомство)
+N8N_WEBHOOK_ANONS = os.getenv('N8N_WEBHOOK_ANONS')  # Для prompt_anons (анонсы)
+N8N_WEBHOOK_PRODAJ = os.getenv('N8N_WEBHOOK_PRODAJ')  # Для prompt_prodaj (продающий пост)
 
 # Папка для медиафайлов
 MEDIA_FOLDER = 'media'

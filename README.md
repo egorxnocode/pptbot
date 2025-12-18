@@ -266,8 +266,23 @@ SUPABASE_POSTS_TABLE=posts
 # OpenAI API ключ
 OPENAI_API_KEY=your_openai_api_key_here
 
-# n8n Webhook URL
-N8N_WEBHOOK_URL=your_n8n_webhook_url_here
+# n8n Webhooks - отдельный webhook для каждого типа запроса
+# Формат запроса для всех webhooks: {"telegram_id": int, "text": string, "request_id": string}
+
+# Webhook для рассказа о себе (prompt_osebe)
+N8N_WEBHOOK_OSEBE=https://your-n8n.domain/webhook/osebe
+
+# Webhook для создания постов (prompt_post)
+N8N_WEBHOOK_POST=https://your-n8n.domain/webhook/post
+
+# Webhook для поста-знакомства (prompt_bluebutt)
+N8N_WEBHOOK_BLUEBUTT=https://your-n8n.domain/webhook/bluebutt
+
+# Webhook для анонсов (prompt_anons)
+N8N_WEBHOOK_ANONS=https://your-n8n.domain/webhook/anons
+
+# Webhook для продающего поста (prompt_prodaj)
+N8N_WEBHOOK_PRODAJ=https://your-n8n.domain/webhook/prodaj
 ```
 
 ### 4. Получение API ключа OpenAI
@@ -276,19 +291,197 @@ N8N_WEBHOOK_URL=your_n8n_webhook_url_here
 2. Создайте API ключ
 3. Добавьте ключ в файл `.env`
 
-### 5. Настройка n8n workflow
+### 5. Настройка n8n webhooks
 
-1. Создайте workflow в n8n для обработки AI-запросов
-2. Добавьте webhook endpoint
-3. Настройте обратный webhook для отправки ответов в бота
-4. Добавьте URL webhook в `.env`
+**⚠️ ВАЖНО:** Для каждого типа AI-генерации используется отдельный webhook!
 
-**Workflow должен обрабатывать следующие типы запросов:**
-- `prompt_osebe` - Генерация вариантов ниш для канала
-- Промпты для постов (post1_prompt - post5_prompt) - Генерация 5 постов
-- `prompt_bluebutt` - Генерация поста-знакомства с кнопкой
-- `prompt_anons` - Генерация анонсов для привлечения аудитории
-- `prompt_prodaj` - Генерация продающих постов
+#### Структура запроса (одинаковая для всех webhooks):
+
+```json
+{
+  "telegram_id": 123456789,
+  "text": "Текст промпта или ответа пользователя",
+  "request_id": "uuid-string"
+}
+```
+
+#### 🔹 Webhook 1: OSEBE (Рассказ о себе)
+
+**Назначение:** Генерация вариантов ниш для канала на основе рассказа пользователя о себе.
+
+**Webhook URL:** `N8N_WEBHOOK_OSEBE`
+
+**Когда используется:** Когда пользователь нажимает "Нужна помощь" после learn3.mp4 и отвечает на вопрос о себе.
+
+**Path для ответа в бота:**
+```
+POST /bot/response/osebe
+Content-Type: application/json
+
+{
+  "telegram_id": 123456789,
+  "request_id": "uuid-string",
+  "response": "Сгенерированный текст с вариантами ниш"
+}
+```
+
+**Промпт берется из Supabase:** `prompts.prompt_osebe`
+
+---
+
+#### 🔹 Webhook 2: POST (Создание постов 1-5)
+
+**Назначение:** Генерация постов для наполнения канала.
+
+**Webhook URL:** `N8N_WEBHOOK_POST`
+
+**Когда используется:** При создании каждого из 5 постов, когда пользователь отвечает на 3 вопроса.
+
+**Path для ответа в бота:**
+```
+POST /bot/response/post
+Content-Type: application/json
+
+{
+  "telegram_id": 123456789,
+  "request_id": "uuid-string",
+  "response": "Сгенерированный пост"
+}
+```
+
+**Промпт берется из Supabase:** `posts.prompt_post` (для каждого из 5 постов)
+
+**Особенности:**
+- Для каждого поста свой промпт из таблицы `posts`
+- Промпт уже содержит подставленные ответы пользователя на 3 вопроса
+- Поддерживается переписывание (до 2 попыток на пост)
+
+---
+
+#### 🔹 Webhook 3: BLUEBUTT (Пост-знакомство)
+
+**Назначение:** Генерация текста для поста-знакомства с кнопкой.
+
+**Webhook URL:** `N8N_WEBHOOK_BLUEBUTT`
+
+**Когда используется:** После ответа на 5 вопросов о канале/продукте и предоставления ссылок на лучшие посты.
+
+**Path для ответа в бота:**
+```
+POST /bot/response/bluebutt
+Content-Type: application/json
+
+{
+  "telegram_id": 123456789,
+  "request_id": "uuid-string",
+  "response": "Сгенерированный текст поста-знакомства"
+}
+```
+
+**Промпт берется из Supabase:** `prompts.prompt_bluebutt`
+
+**Особенности:**
+- Промпт содержит ответы на 5 вопросов
+- Может содержать ссылки на 5 лучших постов (опционально)
+
+---
+
+#### 🔹 Webhook 4: ANONS (Анонсы)
+
+**Назначение:** Генерация анонса для привлечения аудитории.
+
+**Webhook URL:** `N8N_WEBHOOK_ANONS`
+
+**Когда используется:** После learn6.mp4, когда пользователь выбирает "Напиши анонс за меня" и отвечает на 2 вопроса.
+
+**Path для ответа в бота:**
+```
+POST /bot/response/anons
+Content-Type: application/json
+
+{
+  "telegram_id": 123456789,
+  "request_id": "uuid-string",
+  "response": "Сгенерированный анонс"
+}
+```
+
+**Промпт берется из Supabase:** `prompts.prompt_anons`
+
+**Особенности:**
+- 2 вопроса: О чем речь в посте? + Ссылка на пост
+- Данные сохраняются в `users` как `anons1` и `anons2`
+
+---
+
+#### 🔹 Webhook 5: PRODAJ (Продающий пост)
+
+**Назначение:** Генерация продающего поста.
+
+**Webhook URL:** `N8N_WEBHOOK_PRODAJ`
+
+**Когда используется:** После learn7.mp4, когда пользователь выбирает "Напиши продающий пост за меня" и отвечает на 3 вопроса.
+
+**Path для ответа в бота:**
+```
+POST /bot/response/prodaj
+Content-Type: application/json
+
+{
+  "telegram_id": 123456789,
+  "request_id": "uuid-string",
+  "response": "Сгенерированный продающий пост"
+}
+```
+
+**Промпт берется из Supabase:** `prompts.prompt_prodaj`
+
+**Особенности:**
+- 3 вопроса: Что продаете? + Какую проблему решает? + Призыв к действию
+- Данные сохраняются в `users` как `prodaj1`, `prodaj2`, `prodaj3`
+- Поддерживается переписывание (вопросы задаются заново)
+
+---
+
+#### 📝 Настройка n8n workflow
+
+**Для каждого webhook создайте отдельный workflow в n8n:**
+
+1. **Webhook Node** - принимает POST запрос с `telegram_id`, `text`, `request_id`
+2. **AI Node** (ChatGPT/Claude/etc.) - обрабатывает `text` и генерирует ответ
+3. **HTTP Request Node** - отправляет ответ обратно в бота на соответствующий path
+
+**Пример настройки HTTP Request для ответа:**
+
+```
+Method: POST
+URL: https://your-bot-domain/bot/response/{type}
+Headers:
+  Content-Type: application/json
+Body:
+{
+  "telegram_id": {{$node["Webhook"].json["telegram_id"]}},
+  "request_id": {{$node["Webhook"].json["request_id"]}},
+  "response": {{$node["AI"].json["response"]}}
+}
+```
+
+**Где `{type}`** - один из: `osebe`, `post`, `bluebutt`, `anons`, `prodaj`
+
+---
+
+#### ⚙️ Endpoint бота для приема ответов от n8n
+
+Бот автоматически проверяет таблицу `n8n_responses` в Supabase каждые 5 секунд.
+
+**n8n должен сохранять ответы в таблицу `n8n_responses`:**
+
+```sql
+INSERT INTO n8n_responses (telegram_id, request_id, response)
+VALUES (123456789, 'uuid-string', 'Сгенерированный текст');
+```
+
+**Таймаут ожидания:** 3 минуты (180 секунд)
 
 ### 6. Добавление медиафайлов
 
@@ -511,8 +704,12 @@ SUPABASE_KEY=ваш_supabase_anon_key
 # OpenAI
 OPENAI_API_KEY=ваш_openai_api_key
 
-# n8n (ваш развернутый сервер)
-N8N_WEBHOOK_URL=http://your-server:5678/webhook/pptbot
+# n8n Webhooks (ваш развернутый сервер)
+N8N_WEBHOOK_OSEBE=https://your-n8n.domain/webhook/osebe
+N8N_WEBHOOK_POST=https://your-n8n.domain/webhook/post
+N8N_WEBHOOK_BLUEBUTT=https://your-n8n.domain/webhook/bluebutt
+N8N_WEBHOOK_ANONS=https://your-n8n.domain/webhook/anons
+N8N_WEBHOOK_PRODAJ=https://your-n8n.domain/webhook/prodaj
 ```
 
 3. **Добавьте медиафайлы в папку `media/`:**
@@ -614,7 +811,11 @@ networks:
 
 ```bash
 SUPABASE_URL=http://supabase-kong:8000
-N8N_WEBHOOK_URL=http://n8n:5678/webhook/pptbot
+N8N_WEBHOOK_OSEBE=http://n8n:5678/webhook/osebe
+N8N_WEBHOOK_POST=http://n8n:5678/webhook/post
+N8N_WEBHOOK_BLUEBUTT=http://n8n:5678/webhook/bluebutt
+N8N_WEBHOOK_ANONS=http://n8n:5678/webhook/anons
+N8N_WEBHOOK_PRODAJ=http://n8n:5678/webhook/prodaj
 ```
 
 ### Автозапуск при перезагрузке сервера
@@ -653,9 +854,12 @@ docker exec pptbot-telegram-bot ls -la /app/media
 **Не подключается к Supabase/n8n:**
 
 ```bash
-# Проверить доступность
+# Проверить доступность Supabase
 docker exec pptbot-telegram-bot curl -I $SUPABASE_URL
-docker exec pptbot-telegram-bot curl -I $N8N_WEBHOOK_URL
+
+# Проверить доступность n8n webhooks
+docker exec pptbot-telegram-bot curl -I $N8N_WEBHOOK_OSEBE
+docker exec pptbot-telegram-bot curl -I $N8N_WEBHOOK_POST
 ```
 
 ---
@@ -905,7 +1109,11 @@ TELEGRAM_BOT_TOKEN=ваш_токен_от_BotFather
 SUPABASE_URL=https://ваш-проект.supabase.co
 SUPABASE_KEY=ваш_supabase_anon_key
 OPENAI_API_KEY=ваш_openai_api_key
-N8N_WEBHOOK_URL=http://ваш-сервер:5678/webhook/pptbot
+N8N_WEBHOOK_OSEBE=https://your-n8n.domain/webhook/osebe
+N8N_WEBHOOK_POST=https://your-n8n.domain/webhook/post
+N8N_WEBHOOK_BLUEBUTT=https://your-n8n.domain/webhook/bluebutt
+N8N_WEBHOOK_ANONS=https://your-n8n.domain/webhook/anons
+N8N_WEBHOOK_PRODAJ=https://your-n8n.domain/webhook/prodaj
 
 # 4. Загрузить медиафайлы
 # Поместите learn1.mp4 - learn7.mp4 в папку media/
@@ -977,17 +1185,39 @@ INSERT INTO users (email) VALUES ('test@mail.com');
 
 #### 4. Настройка n8n
 
-1. Откройте ваш n8n
-2. Создайте новый workflow
-3. Добавьте "Webhook" node
-4. Настройте:
-   - Method: POST
-   - Path: `/webhook/pptbot`
-5. Добавьте AI node (OpenAI, Anthropic и т.д.)
-6. Настройте обработку промптов
-7. Добавьте HTTP Request node для отправки ответа обратно боту
-8. Активируйте workflow
-9. Скопируйте Production Webhook URL → в `N8N_WEBHOOK_URL`
+Создайте **5 отдельных workflows** для каждого типа запроса:
+
+**Workflow 1: OSEBE (Рассказ о себе)**
+1. Webhook node → Path: `/webhook/osebe`
+2. AI node → генерация вариантов ниш
+3. HTTP Request node → сохранение в Supabase `n8n_responses`
+4. Активируйте → скопируйте URL → `N8N_WEBHOOK_OSEBE`
+
+**Workflow 2: POST (Создание постов)**
+1. Webhook node → Path: `/webhook/post`
+2. AI node → генерация поста
+3. HTTP Request node → сохранение в Supabase
+4. Активируйте → скопируйте URL → `N8N_WEBHOOK_POST`
+
+**Workflow 3: BLUEBUTT (Пост-знакомство)**
+1. Webhook node → Path: `/webhook/bluebutt`
+2. AI node → генерация поста с кнопкой
+3. HTTP Request node → сохранение в Supabase
+4. Активируйте → скопируйте URL → `N8N_WEBHOOK_BLUEBUTT`
+
+**Workflow 4: ANONS (Анонсы)**
+1. Webhook node → Path: `/webhook/anons`
+2. AI node → генерация анонса
+3. HTTP Request node → сохранение в Supabase
+4. Активируйте → скопируйте URL → `N8N_WEBHOOK_ANONS`
+
+**Workflow 5: PRODAJ (Продающий пост)**
+1. Webhook node → Path: `/webhook/prodaj`
+2. AI node → генерация продающего поста
+3. HTTP Request node → сохранение в Supabase
+4. Активируйте → скопируйте URL → `N8N_WEBHOOK_PRODAJ`
+
+**См. подробную документацию по каждому webhook выше в разделе "Настройка n8n webhooks"**
 
 #### 5. Загрузка медиафайлов
 
@@ -1096,7 +1326,11 @@ networks:
 В `.env` использовать имена контейнеров:
 ```bash
 SUPABASE_URL=http://supabase-kong:8000
-N8N_WEBHOOK_URL=http://n8n:5678/webhook/pptbot
+N8N_WEBHOOK_OSEBE=http://n8n:5678/webhook/osebe
+N8N_WEBHOOK_POST=http://n8n:5678/webhook/post
+N8N_WEBHOOK_BLUEBUTT=http://n8n:5678/webhook/bluebutt
+N8N_WEBHOOK_ANONS=http://n8n:5678/webhook/anons
+N8N_WEBHOOK_PRODAJ=http://n8n:5678/webhook/prodaj
 ```
 
 ### Мониторинг
@@ -1133,7 +1367,8 @@ docker exec pptbot-telegram-bot curl -I $SUPABASE_URL
 
 **Нет подключения к n8n:**
 ```bash
-docker exec pptbot-telegram-bot curl -I $N8N_WEBHOOK_URL
+docker exec pptbot-telegram-bot curl -I $N8N_WEBHOOK_OSEBE
+docker exec pptbot-telegram-bot curl -I $N8N_WEBHOOK_POST
 ```
 
 **Не видит медиафайлы:**
