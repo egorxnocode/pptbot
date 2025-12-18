@@ -35,6 +35,19 @@ from logger import bot_logger
 db = Database()
 
 
+def sync_user_state(context: ContextTypes.DEFAULT_TYPE, telegram_id: int, state: str) -> None:
+    """
+    Синхронизирует состояние пользователя в БД и контексте
+    
+    Args:
+        context: Контекст бота
+        telegram_id: ID пользователя
+        state: Новое состояние
+    """
+    db.update_user_state(telegram_id, state)
+    context.user_data['state'] = state
+
+
 def is_valid_email(email: str) -> bool:
     """
     Проверяет корректность email адреса
@@ -698,16 +711,15 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     user = update.effective_user
     telegram_id = user.id
     
-    # Получаем состояние пользователя
-    user_state = context.user_data.get('state')
-    
-    # Если состояние не сохранено в контексте, проверяем БД
-    if not user_state:
-        user_data = db.get_user_by_telegram_id(telegram_id)
-        if user_data:
-            user_state = user_data.get('state', UserState.NEW)
-        else:
-            user_state = UserState.NEW
+    # ВСЕГДА загружаем актуальное состояние из БД
+    user_data = db.get_user_by_telegram_id(telegram_id)
+    if user_data:
+        user_state = user_data.get('state', UserState.NEW)
+        # Синхронизируем состояние в контексте
+        context.user_data['state'] = user_state
+    else:
+        user_state = UserState.NEW
+        context.user_data['state'] = user_state
     
     # В зависимости от состояния вызываем нужный обработчик
     if user_state in [UserState.NEW, UserState.WAITING_EMAIL]:
