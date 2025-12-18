@@ -48,6 +48,26 @@ def sync_user_state(context: ContextTypes.DEFAULT_TYPE, telegram_id: int, state:
     context.user_data['state'] = state
 
 
+async def delete_message_safe(context: ContextTypes.DEFAULT_TYPE, chat_id: int, message_id: int) -> bool:
+    """
+    Безопасно удаляет сообщение (не падает при ошибке)
+    
+    Args:
+        context: Контекст бота
+        chat_id: ID чата
+        message_id: ID сообщения
+        
+    Returns:
+        True если удалено, False если нет
+    """
+    try:
+        await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+        return True
+    except Exception as e:
+        bot_logger.warning('SYSTEM', f'Не удалось удалить сообщение {message_id}: {str(e)}', telegram_id=chat_id)
+        return False
+
+
 def is_valid_email(email: str) -> bool:
     """
     Проверяет корректность email адреса
@@ -78,7 +98,18 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if user_data:
         current_state = user_data.get('state', UserState.NEW)
         
-        # Если пользователь уже прошел регистрацию
+        # Если пользователь полностью завершил обучение
+        if current_state == UserState.COMPLETED:
+            await update.message.reply_text(
+                "🎉 <b>Поздравляем!</b>\n\n"
+                "Вы уже успешно завершили обучение!\n"
+                "Все материалы у вас есть.\n\n"
+                "Желаем успехов в развитии вашего канала! 🚀",
+                parse_mode=ParseMode.HTML
+            )
+            return
+        
+        # Если пользователь уже прошел регистрацию и в процессе
         if current_state in [UserState.REGISTERED, UserState.VIDEO_SENT, UserState.VIDEO_WATCHED]:
             await update.message.reply_text(
                 "Вы уже зарегистрированы в системе!",
@@ -141,13 +172,18 @@ async def handle_email(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     db.update_user_state(telegram_id, UserState.REGISTERED)
     
     # Отправляем сообщение об успешной регистрации
-    await update.message.reply_text(
+    success_msg = await update.message.reply_text(
         messages.REGISTRATION_SUCCESS,
         parse_mode=ParseMode.HTML
     )
     
     # Отправляем видео
     await send_video_and_button(update, context, telegram_id)
+    
+    # Удаляем временные сообщения (приветствие с запросом email, ответ пользователя, сообщение об успехе)
+    await asyncio.sleep(2)  # Даем пользователю прочитать
+    await delete_message_safe(context, telegram_id, update.message.message_id)  # Сообщение с email
+    await delete_message_safe(context, telegram_id, success_msg.message_id)  # Сообщение об успехе
 
 
 async def send_video_and_button(update: Update, context: ContextTypes.DEFAULT_TYPE, telegram_id: int) -> None:

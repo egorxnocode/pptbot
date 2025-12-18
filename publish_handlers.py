@@ -1052,7 +1052,7 @@ async def handle_to_final_step(query, context: ContextTypes.DEFAULT_TYPE, telegr
 
 async def show_final_step(context: ContextTypes.DEFAULT_TYPE, telegram_id: int) -> None:
     """
-    Показывает финальные сообщения
+    Показывает финальные сообщения и завершает обучение
     """
     db.update_user_state(telegram_id, UserState.FINAL_STEP)
     
@@ -1078,4 +1078,9 @@ async def show_final_step(context: ContextTypes.DEFAULT_TYPE, telegram_id: int) 
         text=messages.FINAL_STEP_MESSAGE_3,
         parse_mode=ParseMode.HTML
     )
+    
+    # Устанавливаем финальное состояние - обучение полностью завершено
+    db.update_user_state(telegram_id, UserState.COMPLETED)
+    
+    bot_logger.info('USER', f'Пользователь завершил обучение', telegram_id=telegram_id)
 

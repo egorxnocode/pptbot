@@ -101,6 +101,7 @@ class UserState:
     SALES_POST_READY = 'sales_post_ready'  # Продающий пост готов
     REWRITING_SALES_POST = 'rewriting_sales_post'  # Переписывание продающего поста
     FINAL_STEP = 'final_step'  # Финальный шаг
+    COMPLETED = 'completed'  # Полностью завершил обучение
 
 # Время для напоминаний (в секундах)
 REMINDER_1_DELAY = 10 * 60  # 10 минут
