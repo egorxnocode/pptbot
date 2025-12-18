@@ -1017,6 +1017,9 @@ async def generate_post_with_n8n(update: Update, context: ContextTypes.DEFAULT_T
     )
     
     if n8n_response:
+        # Удаляем ответ пользователя (не нужен больше)
+        await delete_message_safe(context, telegram_id, update.message.message_id)
+        
         # Показываем результат
         await show_post_result(context, telegram_id, post_num, attempt, n8n_response, processing_msg)
     else:

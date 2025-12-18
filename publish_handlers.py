@@ -12,9 +12,30 @@ from config import UserState, BLUE_BUTTON_QUESTIONS, BEST_LINKS_COUNT
 import messages
 from channel_helper import check_if_channel, check_bot_admin, publish_post_to_channel
 from n8n_helper import generate_request_id, send_to_n8n, wait_for_n8n_response
+from logger import bot_logger
 
 # Инициализация базы данных
 db = Database()
+
+
+async def delete_message_safe(context: ContextTypes.DEFAULT_TYPE, chat_id: int, message_id: int) -> bool:
+    """
+    Безопасно удаляет сообщение (не падает при ошибке)
+    
+    Args:
+        context: Контекст бота
+        chat_id: ID чата
+        message_id: ID сообщения
+        
+    Returns:
+        True если удалено, False если нет
+    """
+    try:
+        await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+        return True
+    except Exception as e:
+        bot_logger.warning('SYSTEM', f'Не удалось удалить сообщение {message_id}: {str(e)}', telegram_id=chat_id)
+        return False
 
 
 async def handle_publish_myself(query, context: ContextTypes.DEFAULT_TYPE, telegram_id: int) -> None:
@@ -768,11 +789,14 @@ async def generate_anons_with_n8n(update: Update, context: ContextTypes.DEFAULT_
         db.save_anons_data(telegram_id, anons_text=n8n_response)
         db.update_user_state(telegram_id, UserState.ANONS_COMPLETED)
         
-        # Показываем анонс
+        # Показываем анонс (это важное сообщение)
         await processing_msg.edit_text(
             messages.ANONS_READY_MESSAGE.format(anons_text=n8n_response),
             parse_mode=ParseMode.HTML
         )
+        
+        # Удаляем ответ пользователя (не нужен больше)
+        await delete_message_safe(context, telegram_id, update.message.message_id)
         
         # Автоматически переходим к созданию продающего поста
         await start_sales_post_flow(context, telegram_id)
@@ -971,6 +995,9 @@ async def generate_sales_post_with_n8n(update: Update, context: ContextTypes.DEF
         # Сохраняем готовый продающий пост
         db.save_sales_data(telegram_id, sales_text=n8n_response)
         db.update_user_state(telegram_id, UserState.SALES_POST_READY)
+        
+        # Удаляем ответ пользователя (не нужен больше)
+        await delete_message_safe(context, telegram_id, update.message.message_id)
         
         # Проверяем количество переписываний
         sales_data = db.get_sales_data(telegram_id)
