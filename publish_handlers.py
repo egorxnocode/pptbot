@@ -293,9 +293,6 @@ async def generate_blue_button_post(update_or_query, context: ContextTypes.DEFAU
     # Генерируем request_id
     request_id = generate_request_id()
     
-    # Сохраняем запрос
-    db.save_n8n_request(telegram_id, request_id, str(blue_answers))
-    
     # Отправляем в n8n (prompt_bluebutt - пост-знакомство)
     success = send_to_n8n(telegram_id, prompt_text, request_id, 'bluebutt')
     
@@ -752,9 +749,6 @@ async def generate_anons_with_n8n(update: Update, context: ContextTypes.DEFAULT_
     # Генерируем request_id
     request_id = generate_request_id()
     
-    # Сохраняем запрос
-    db.save_n8n_request(telegram_id, request_id, f"anons1: {anons1}, anons2: {anons2}")
-    
     # Отправляем в n8n (prompt_anons - создание анонсов)
     success = send_to_n8n(telegram_id, prompt_text, request_id, 'anons')
     
@@ -956,9 +950,6 @@ async def generate_sales_post_with_n8n(update: Update, context: ContextTypes.DEF
     
     # Генерируем request_id
     request_id = generate_request_id()
-    
-    # Сохраняем запрос
-    db.save_n8n_request(telegram_id, request_id, f"prodaj1: {prodaj1}, prodaj2: {prodaj2}, prodaj3: {prodaj3}")
     
     # Отправляем в n8n (prompt_prodaj - продающий пост)
     success = send_to_n8n(telegram_id, prompt_text, request_id, 'prodaj')

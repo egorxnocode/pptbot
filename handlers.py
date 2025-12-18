@@ -531,9 +531,6 @@ async def process_help_answer(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Генерируем уникальный request_id
     request_id = generate_request_id()
     
-    # Сохраняем запрос в БД
-    db.save_n8n_request(telegram_id, request_id, user_answer)
-    
     # Отправляем в n8n (prompt_osebe - рассказ о себе)
     success = send_to_n8n(telegram_id, prompt_text, request_id, 'osebe')
     
@@ -955,9 +952,6 @@ async def generate_post_with_n8n(update: Update, context: ContextTypes.DEFAULT_T
     
     # Генерируем уникальный request_id
     request_id = generate_request_id()
-    
-    # Сохраняем запрос в БД
-    db.save_n8n_request(telegram_id, request_id, str(answers))
     
     # Отправляем в n8n (prompt_post - создание постов)
     success = send_to_n8n(telegram_id, prompt_text, request_id, 'post')

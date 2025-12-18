@@ -46,16 +46,32 @@ async def handle_n8n_response(request, webhook_type: str):
         webhook_type: тип webhook (osebe, post, bluebutt, anons, prodaj)
     """
     try:
-        data = await request.json()
+        # Логируем получение запроса
+        bot_logger.info('WEBHOOK', 
+                       f'Получен запрос от n8n ({webhook_type})', 
+                       webhook_type=webhook_type)
+        
+        # Читаем JSON
+        try:
+            data = await request.json()
+        except Exception as e:
+            bot_logger.error('WEBHOOK', 
+                           f'Ошибка парсинга JSON от n8n ({webhook_type}): {str(e)}')
+            return web.json_response({'status': 'error', 'message': 'Invalid JSON'}, status=400)
         
         telegram_id = data.get('telegram_id')
         request_id = data.get('request_id')
         response_text = data.get('response')
         
+        bot_logger.info('WEBHOOK', 
+                       f'Данные от n8n: telegram_id={telegram_id}, request_id={request_id}, response_len={len(response_text) if response_text else 0}',
+                       telegram_id=telegram_id,
+                       request_id=request_id)
+        
         if not all([telegram_id, request_id, response_text]):
             bot_logger.error('WEBHOOK', 
                            f'Неполные данные от n8n ({webhook_type}): {data}')
-            return web.json_response({'error': 'Missing required fields'}, status=400)
+            return web.json_response({'status': 'error', 'message': 'Missing required fields', 'received': data}, status=400)
         
         bot_logger.n8n_response_received(telegram_id, request_id, len(response_text))
         bot_logger.info('WEBHOOK', 
