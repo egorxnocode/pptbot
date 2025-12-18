@@ -853,6 +853,8 @@ async def handle_help_write_sales(query, context: ContextTypes.DEFAULT_TYPE, tel
     """
     Обрабатывает выбор "Напиши продающий пост за меня"
     """
+    # Обнуляем счетчик переписываний при начале создания нового поста
+    db.save_sales_data(telegram_id, rewrite_count=0)
     db.update_user_state(telegram_id, UserState.CREATING_SALES_POST)
     
     await query.edit_message_text(
@@ -907,7 +909,7 @@ async def process_sales_answer(update: Update, context: ContextTypes.DEFAULT_TYP
         await generate_sales_post_with_n8n(update, context, telegram_id)
 
 
-async def generate_sales_post_with_n8n(update: Update, context: ContextTypes.DEFAULT_TYPE, telegram_id: int, is_rewrite: bool = False) -> None:
+async def generate_sales_post_with_n8n(update: Update, context: ContextTypes.DEFAULT_TYPE, telegram_id: int) -> None:
     """
     Генерирует продающий пост через n8n
     """
@@ -970,19 +972,24 @@ async def generate_sales_post_with_n8n(update: Update, context: ContextTypes.DEF
         db.save_sales_data(telegram_id, sales_text=n8n_response)
         db.update_user_state(telegram_id, UserState.SALES_POST_READY)
         
-        # Определяем какое сообщение показать
-        if is_rewrite:
+        # Проверяем количество переписываний
+        sales_data = db.get_sales_data(telegram_id)
+        rewrite_count = sales_data.get('rewrite_count', 0) if sales_data else 0
+        
+        # Если это уже второй раз (после переписывания) - показываем без кнопок и переходим дальше
+        if rewrite_count >= 1:
             message_text = messages.SALES_POST_REWRITTEN_MESSAGE.format(sales_text=n8n_response)
-            # Только одна кнопка после переписывания
-            keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton(
-                    messages.BUTTON_TO_FINAL_STEP,
-                    callback_data='to_final_step'
-                )]
-            ])
+            # Показываем пост БЕЗ кнопок
+            await processing_msg.edit_text(
+                message_text,
+                parse_mode=ParseMode.HTML
+            )
+            # Автоматически переходим к финальному шагу через 2 секунды
+            await asyncio.sleep(2)
+            await show_final_step(context, telegram_id)
         else:
+            # Первый показ - даем возможность переписать
             message_text = messages.SALES_POST_READY_MESSAGE.format(sales_text=n8n_response)
-            # Две кнопки при первом показе
             keyboard = InlineKeyboardMarkup([
                 [InlineKeyboardButton(
                     messages.BUTTON_REWRITE_SALES,
@@ -993,13 +1000,12 @@ async def generate_sales_post_with_n8n(update: Update, context: ContextTypes.DEF
                     callback_data='to_final_step'
                 )]
             ])
-        
-        # Показываем продающий пост
-        await processing_msg.edit_text(
-            message_text,
-            reply_markup=keyboard,
-            parse_mode=ParseMode.HTML
-        )
+            # Показываем продающий пост с кнопками
+            await processing_msg.edit_text(
+                message_text,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML
+            )
     else:
         # Таймаут
         await processing_msg.edit_text(
