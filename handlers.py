@@ -92,12 +92,13 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         parse_mode=ParseMode.HTML
     )
     
-    # Обновляем состояние пользователя
+    # Если пользователь уже есть в БД, обновляем его состояние
+    # Если нет - состояние будет NEW, что тоже валидно для ввода email
     if user_data:
-        db.update_user_state(telegram_id, UserState.WAITING_EMAIL)
-    
-    # Сохраняем состояние в контексте
-    context.user_data['state'] = UserState.WAITING_EMAIL
+        sync_user_state(context, telegram_id, UserState.WAITING_EMAIL)
+    else:
+        # Для нового пользователя устанавливаем состояние в контексте
+        context.user_data['state'] = UserState.NEW
 
 
 async def handle_email(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -112,11 +113,9 @@ async def handle_email(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     # Проверяем текущее состояние пользователя
     user_state = context.user_data.get('state')
     
-    # Если не в состоянии ожидания email, проверяем БД
-    if user_state != UserState.WAITING_EMAIL:
-        user_data = db.get_user_by_telegram_id(telegram_id)
-        if not user_data or user_data.get('state') != UserState.WAITING_EMAIL:
-            return
+    # Обрабатываем email только если пользователь в состоянии NEW или WAITING_EMAIL
+    if user_state not in [UserState.NEW, UserState.WAITING_EMAIL]:
+        return
     
     # Проверяем корректность email
     if not is_valid_email(email_input):
