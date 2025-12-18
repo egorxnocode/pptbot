@@ -26,12 +26,8 @@ async def handle_publish_myself(query, context: ContextTypes.DEFAULT_TYPE, teleg
         parse_mode=ParseMode.HTML
     )
     
-    # TODO: Переход к следующему этапу
-    await context.bot.send_message(
-        chat_id=telegram_id,
-        text="🎉 Отлично! Переходим к следующему этапу...",
-        parse_mode=ParseMode.HTML
-    )
+    # Переходим к следующему этапу - создание анонсов
+    await start_anons_flow(context, telegram_id)
 
 
 async def handle_help_publish(query, context: ContextTypes.DEFAULT_TYPE, telegram_id: int) -> None:
