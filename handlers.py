@@ -590,11 +590,14 @@ async def process_help_answer(update: Update, context: ContextTypes.DEFAULT_TYPE
         # Получили ответ от n8n
         db.update_user_state(telegram_id, UserState.HELP_COMPLETED)
         
-        # Отправляем варианты пользователю
+        # Отправляем варианты пользователю (это важное сообщение, его оставляем)
         await processing_msg.edit_text(
             messages.HELP_VARIANTS_MESSAGE.format(n8n_response=n8n_response),
             parse_mode=ParseMode.HTML
         )
+        
+        # Удаляем ответ пользователя (не нужен больше)
+        await delete_message_safe(context, telegram_id, update.message.message_id)
         
         # Переходим к следующему этапу
         await send_fill_channel_step(context, telegram_id)
