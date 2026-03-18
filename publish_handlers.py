@@ -13,6 +13,7 @@ import messages
 from channel_helper import check_if_channel, check_bot_admin, publish_post_to_channel
 from n8n_helper import generate_request_id, send_to_n8n, wait_for_n8n_response
 from logger import bot_logger
+from video_helper import send_video_safe
 
 # Инициализация базы данных
 db = Database()
@@ -620,23 +621,16 @@ async def start_anons_flow(context: ContextTypes.DEFAULT_TYPE, telegram_id: int)
     """
     Начинает процесс создания анонсов
     """
-    from config import VIDEO_LEARN6
-    
+    from config import VIDEO_LEARN6, VIDEO_LEARN6_FILE_ID
+
     # Отправляем сообщение о готовности канала
     await context.bot.send_message(
         chat_id=telegram_id,
         text=messages.CHANNEL_READY_NEED_AUDIENCE,
         parse_mode=ParseMode.HTML
     )
-    
-    # Проверяем наличие видео
-    if os.path.exists(VIDEO_LEARN6):
-        with open(VIDEO_LEARN6, 'rb') as video_file:
-            await context.bot.send_video(
-                chat_id=telegram_id,
-                video=video_file,
-                supports_streaming=True
-            )
+
+    await send_video_safe(context.bot, telegram_id, VIDEO_LEARN6, file_id=VIDEO_LEARN6_FILE_ID)
     
     # Обновляем состояние
     db.update_user_state(telegram_id, UserState.LEARN6_SENT)
@@ -817,23 +811,16 @@ async def start_sales_post_flow(context: ContextTypes.DEFAULT_TYPE, telegram_id:
     """
     Начинает процесс создания продающего поста
     """
-    from config import VIDEO_LEARN7
-    
+    from config import VIDEO_LEARN7, VIDEO_LEARN7_FILE_ID
+
     # Отправляем сообщение о готовности к продажам
     await context.bot.send_message(
         chat_id=telegram_id,
         text=messages.READY_FOR_SALES_MESSAGE,
         parse_mode=ParseMode.HTML
     )
-    
-    # Проверяем наличие видео
-    if os.path.exists(VIDEO_LEARN7):
-        with open(VIDEO_LEARN7, 'rb') as video_file:
-            await context.bot.send_video(
-                chat_id=telegram_id,
-                video=video_file,
-                supports_streaming=True
-            )
+
+    await send_video_safe(context.bot, telegram_id, VIDEO_LEARN7, file_id=VIDEO_LEARN7_FILE_ID)
     
     # Обновляем состояние
     db.update_user_state(telegram_id, UserState.LEARN7_SENT)

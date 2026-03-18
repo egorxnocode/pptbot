@@ -30,7 +30,7 @@ N8N_WEBHOOK_PRODAJ = os.getenv('N8N_WEBHOOK_PRODAJ')  # Для prompt_prodaj (п
 # Папка для медиафайлов
 MEDIA_FOLDER = 'media'
 
-# Видеофайлы
+# Пути к видеофайлам (fallback — загрузка с диска)
 VIDEO_LEARN1 = os.path.join(MEDIA_FOLDER, 'learn1.mp4')
 VIDEO_LEARN2 = os.path.join(MEDIA_FOLDER, 'learn2.mp4')
 VIDEO_LEARN3 = os.path.join(MEDIA_FOLDER, 'learn3.mp4')
@@ -38,6 +38,16 @@ VIDEO_LEARN4 = os.path.join(MEDIA_FOLDER, 'learn4.mp4')
 VIDEO_LEARN5 = os.path.join(MEDIA_FOLDER, 'learn5.mp4')
 VIDEO_LEARN6 = os.path.join(MEDIA_FOLDER, 'learn6.mp4')
 VIDEO_LEARN7 = os.path.join(MEDIA_FOLDER, 'learn7.mp4')
+
+# Telegram file_id для видео (приоритет над загрузкой файла, нет лимита 50 МБ)
+# Получить file_id: python upload_videos.py YOUR_CHAT_ID
+VIDEO_LEARN1_FILE_ID = os.getenv('VIDEO_LEARN1_FILE_ID')
+VIDEO_LEARN2_FILE_ID = os.getenv('VIDEO_LEARN2_FILE_ID')
+VIDEO_LEARN3_FILE_ID = os.getenv('VIDEO_LEARN3_FILE_ID')
+VIDEO_LEARN4_FILE_ID = os.getenv('VIDEO_LEARN4_FILE_ID')
+VIDEO_LEARN5_FILE_ID = os.getenv('VIDEO_LEARN5_FILE_ID')
+VIDEO_LEARN6_FILE_ID = os.getenv('VIDEO_LEARN6_FILE_ID')
+VIDEO_LEARN7_FILE_ID = os.getenv('VIDEO_LEARN7_FILE_ID')
 
 # Папка для временных файлов (голосовые сообщения)
 TEMP_FOLDER = 'temp'

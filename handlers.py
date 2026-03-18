@@ -10,8 +10,10 @@ from telegram.constants import ParseMode
 from database import Database
 from config import (
     UserState, VIDEO_LEARN1, VIDEO_LEARN2, VIDEO_LEARN3, VIDEO_LEARN4, TEMP_FOLDER,
-    TOTAL_POSTS, QUESTIONS_PER_POST, MAX_POST_ATTEMPTS
+    TOTAL_POSTS, QUESTIONS_PER_POST, MAX_POST_ATTEMPTS,
+    VIDEO_LEARN1_FILE_ID, VIDEO_LEARN2_FILE_ID, VIDEO_LEARN3_FILE_ID, VIDEO_LEARN4_FILE_ID,
 )
+from video_helper import send_video_safe
 import messages
 from reminders import schedule_reminders, cancel_reminders
 from openai_helper import transcribe_voice
@@ -195,18 +197,7 @@ async def send_video_and_button(update: Update, context: ContextTypes.DEFAULT_TY
         context: Контекст бота
         telegram_id: ID пользователя в Telegram
     """
-    # Проверяем наличие видеофайла и отправляем если есть
-    if os.path.exists(VIDEO_LEARN1):
-        try:
-            with open(VIDEO_LEARN1, 'rb') as video_file:
-                await update.message.reply_video(
-                    video=video_file,
-                    supports_streaming=True
-                )
-        except Exception as e:
-            bot_logger.error('VIDEO', f'Ошибка при отправке видео learn1.mp4: {str(e)}', 
-                           telegram_id=telegram_id)
-            # Продолжаем работу даже если не удалось отправить видео
+    await send_video_safe(context.bot, telegram_id, VIDEO_LEARN1, file_id=VIDEO_LEARN1_FILE_ID)
     
     # Создаем inline кнопку
     keyboard = InlineKeyboardMarkup([
@@ -395,21 +386,7 @@ async def send_channel_creation_instructions(query, context: ContextTypes.DEFAUL
         parse_mode=ParseMode.HTML
     )
     
-    # Проверяем наличие видеофайла learn2.mp4
-    if os.path.exists(VIDEO_LEARN2):
-        # Отправляем видео
-        with open(VIDEO_LEARN2, 'rb') as video_file:
-            await context.bot.send_video(
-                chat_id=telegram_id,
-                video=video_file,
-                supports_streaming=True
-            )
-    else:
-        await context.bot.send_message(
-            chat_id=telegram_id,
-            text=f"❌ Ошибка: видеофайл не найден ({VIDEO_LEARN2})",
-            parse_mode=ParseMode.HTML
-        )
+    await send_video_safe(context.bot, telegram_id, VIDEO_LEARN2, file_id=VIDEO_LEARN2_FILE_ID)
     
     # Отправляем текстовую инструкцию
     await context.bot.send_message(
@@ -450,21 +427,7 @@ async def send_learn3_video(query, context: ContextTypes.DEFAULT_TYPE, telegram_
         parse_mode=ParseMode.HTML
     )
     
-    # Проверяем наличие видеофайла learn3.mp4
-    if os.path.exists(VIDEO_LEARN3):
-        # Отправляем видео
-        with open(VIDEO_LEARN3, 'rb') as video_file:
-            await context.bot.send_video(
-                chat_id=telegram_id,
-                video=video_file,
-                supports_streaming=True
-            )
-    else:
-        await context.bot.send_message(
-            chat_id=telegram_id,
-            text=f"❌ Ошибка: видеофайл не найден ({VIDEO_LEARN3})",
-            parse_mode=ParseMode.HTML
-        )
+    await send_video_safe(context.bot, telegram_id, VIDEO_LEARN3, file_id=VIDEO_LEARN3_FILE_ID)
     
     # Обновляем состояние
     db.update_user_state(telegram_id, UserState.LEARN3_SENT)
@@ -626,21 +589,7 @@ async def send_fill_channel_step(context: ContextTypes.DEFAULT_TYPE, telegram_id
         parse_mode=ParseMode.HTML
     )
     
-    # Проверяем наличие видеофайла learn4.mp4
-    if os.path.exists(VIDEO_LEARN4):
-        # Отправляем видео
-        with open(VIDEO_LEARN4, 'rb') as video_file:
-            await context.bot.send_video(
-                chat_id=telegram_id,
-                video=video_file,
-                supports_streaming=True
-            )
-    else:
-        await context.bot.send_message(
-            chat_id=telegram_id,
-            text=f"❌ Ошибка: видеофайл не найден ({VIDEO_LEARN4})",
-            parse_mode=ParseMode.HTML
-        )
+    await send_video_safe(context.bot, telegram_id, VIDEO_LEARN4, file_id=VIDEO_LEARN4_FILE_ID)
     
     # Обновляем состояние
     db.update_user_state(telegram_id, UserState.LEARN4_SENT)
@@ -1160,23 +1109,16 @@ async def start_publish_intro_post(context: ContextTypes.DEFAULT_TYPE, telegram_
     """
     Начинает процесс публикации поста-знакомства
     """
-    from config import VIDEO_LEARN5
-    
+    from config import VIDEO_LEARN5, VIDEO_LEARN5_FILE_ID
+
     # Отправляем сообщение о публикации
     await context.bot.send_message(
         chat_id=telegram_id,
         text=messages.PUBLISH_INTRO_POST_MESSAGE,
         parse_mode=ParseMode.HTML
     )
-    
-    # Проверяем наличие видео
-    if os.path.exists(VIDEO_LEARN5):
-        with open(VIDEO_LEARN5, 'rb') as video_file:
-            await context.bot.send_video(
-                chat_id=telegram_id,
-                video=video_file,
-                supports_streaming=True
-            )
+
+    await send_video_safe(context.bot, telegram_id, VIDEO_LEARN5, file_id=VIDEO_LEARN5_FILE_ID)
     
     # Обновляем состояние
     db.update_user_state(telegram_id, UserState.LEARN5_SENT)
