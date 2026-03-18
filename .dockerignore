@@ -63,14 +63,8 @@ docker-compose.yml
 .DS_Store
 
 # Windows
-Thumbs.db
-
-# Markdown файлы (кроме README)
+Thumbs.db# Markdown файлы (кроме README)
 LOGGING_EXAMPLES.md
-CHANGELOG.md
-
-# Скрипты (не нужны в контейнере)
-logs.sh
-
-# Supabase локальные файлы
+CHANGELOG.md# Скрипты (не нужны в контейнере)
+logs.sh# Supabase локальные файлы
 supabase/
